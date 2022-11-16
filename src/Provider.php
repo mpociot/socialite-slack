@@ -3,6 +3,7 @@
 namespace Mpociot\Socialite\Slack;
 
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\GuzzleException;
 use SocialiteProviders\Manager\OAuth2\AbstractProvider;
 use Laravel\Socialite\Two\ProviderInterface;
 use SocialiteProviders\Manager\OAuth2\User;
@@ -22,7 +23,7 @@ class Provider extends AbstractProvider implements ProviderInterface
     /**
      * {@inheritdoc}
      */
-    protected function getAuthUrl($state)
+    protected function getAuthUrl($state): string
     {
         return $this->buildAuthUrlFromBase(
             'https://slack.com/oauth/authorize', $state
@@ -32,7 +33,7 @@ class Provider extends AbstractProvider implements ProviderInterface
     /**
      * {@inheritdoc}
      */
-    protected function getTokenUrl()
+    protected function getTokenUrl(): string
     {
         return 'https://slack.com/api/oauth.access';
     }
@@ -52,7 +53,7 @@ class Provider extends AbstractProvider implements ProviderInterface
     /**
      * {@inheritdoc}
      */
-    protected function mapUserToObject(array $user)
+    protected function mapUserToObject(array $user): \Laravel\Socialite\Two\User|User
     {
         return (new User())->setRaw($user)->map([
             'id' => $user['user']['id'],
@@ -69,8 +70,9 @@ class Provider extends AbstractProvider implements ProviderInterface
      * @param string $token
      *
      * @return string
+     * @throws GuzzleException
      */
-    protected function getUserId($token)
+    protected function getUserId(string $token): string
     {
         $response = $this->getHttpClient()->get(
             'https://slack.com/api/auth.test?token='.$token
@@ -87,10 +89,11 @@ class Provider extends AbstractProvider implements ProviderInterface
      * @param string $code
      *
      * @return string
+     * @throws GuzzleException
      */
-    public function getAccessToken($code)
+    public function getAccessToken(string $code): string
     {
-        $postKey = (version_compare(ClientInterface::VERSION, '6') === 1) ? 'form_params' : 'body';
+        $postKey = (version_compare(ClientInterface::MAJOR_VERSION, '6') === 1) ? 'form_params' : 'body';
 
         $response = $this->getHttpClient()->post($this->getTokenUrl(), [
             'headers' => ['Accept' => 'application/json'],
